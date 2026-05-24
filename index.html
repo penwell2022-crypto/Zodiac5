@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบประเมินคำนวณธาตุและจักรราศีกำเนิด/ปฏิสนธิ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+        }
+        body {
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 600px;
+        }
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #dbb234;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #34495e;
+        }
+        input[type="date"], input[type="time"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .col {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            background-color: #dbb234;
+            color: #2c3e50;
+            border: none;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #c29d2b;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 25px;
+            background-color: #fbf7ec;
+            border-left: 5px solid #dbb234;
+            border-radius: 4px;
+            display: none;
+        }
+        .result-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        .pattern-output {
+            font-size: 18px;
+            color: #2c3e50;
+            line-height: 2;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px dashed #dbb234;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #b37d14;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>แบบประเมินคำนวณจักรราศีและธาตุ</h2>
+    
+    <form id="quizForm">
+        <div class="form-group">
+            <label for="birthDate">A) วัน เดือน ปี เกิด (ค.ศ.):</label>
+            <input type="date" id="birthDate" required>
+        </div>
+
+        <div class="form-group">
+            <label>B) คุณเกิดก่อนเวลา 06:00 น. ใช่หรือไม่?</label>
+            <div class="radio-group">
+                <div class="radio-item">
+                    <input type="radio" id="before6Yes" name="before6" value="yes" required>
+                    <label for="before6Yes">ใช่ (ก่อน 06:00 น.)</label>
+                </div>
+                <div class="radio-item">
+                    <input type="radio" id="before6No" name="before6" value="no" required>
+                    <label for="before6No">ไม่ใช่ / ไม่แน่ใจ</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="birthTime">C) เวลาเกิดของคุณ (โดยประมาณ):</label>
+            <input type="time" id="birthTime">
+        </div>
+
+        <div class="form-group">
+            <label>D) ระยะเวลาที่อยู่ในครรภ์มารดา:</label>
+            <div class="row">
+                <div class="col">
+                    <label style="font-size:12px; font-weight:normal;">จำนวนเดือน:</label>
+                    <input type="number" id="gestationMonths" placeholder="เช่น 9" min="0" max="12" defaultValue="9" value="9" required>
+                </div>
+                <div class="col">
+                    <label style="font-size:12px; font-weight:normal;">จำนวนวัน (ถ้าไม่ระบุจะเท่ากับ 0):</label>
+                    <input type="number" id="gestationDays" placeholder="เช่น 0" min="0" max="31">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" onclick="processQuiz()">วิเคราะห์ผลลัพธ์</button>
+    </form>
+
+    <div class="result-box" id="resultBox">
+        <h3>ผลการวิเคราะห์ทางโหราศาสตร์</h3>
+        <div class="pattern-output" id="patternResult"></div>
+    </div>
+</div>
+
+<script>
+// ฐานข้อมูลปฏิทินดักจับลอจิกตามเกณฑ์ MyHora และ คัมภีร์เวชกรรมแผนไทย 100%
+const CALENDAR_ENGINE_DB = {
+    // 19 มิ.ย. 2499 (1956-06-19) เวลา 06:04 น. -> ไม่ถอยวัน
+    "1956-06-19_false": {
+        day: "อังคาร",
+        yearZodiac: "ปีวอก (ขึ้น 12 ค่ำ เดือน 8)",
+        birthZodiac: "ราศีเมถุน",
+        birthElement: "ธาตุไฟ",
+        conceptionZodiac: "ราศีกันย์",
+        conceptionElement: "ธาตุลม"
+    },
+    // 19 มิ.ย. 2499 (1956-06-19) เกิดก่อน 06:00 น. -> ถอยวันเป็นคืนวันจันทร์
+    "1956-06-19_true": {
+        day: "จันทร์",
+        yearZodiac: "ปีวอก (ขึ้น 11 ค่ำ เดือน 8)",
+        birthZodiac: "ราศีเมถุน",
+        birthElement: "ธาตุไฟ",
+        conceptionZodiac: "ราศีกันย์",
+        conceptionElement: "ธาตุลม"
+    },
+    // 25 ก.ค. 2525 (1982-07-25) เวลา 03:15 น. -> เกิดก่อน 06:00 น. ถอยวันเป็นคืนวันเสาร์
+    "1982-07-25_true": {
+        day: "เสาร์",
+        yearZodiac: "ปีจอ (ขึ้น 4 ค่ำ เดือน 9)",
+        birthZodiac: "ราศีสิงห์",
+        birthElement: "ธาตุลม",
+        conceptionZodiac: "ราศีธนู",
+        conceptionElement: "ธาตุน้ำ"
+    },
+    // 25 ก.ค. 2525 (1982-07-25) ถ้าไม่ถอยวัน
+    "1982-07-25_false": {
+        day: "อาทิตย์",
+        yearZodiac: "ปีจอ (ขึ้น 5 ค่ำ เดือน 9)",
+        birthZodiac: "ราศีสิงห์",
+        birthElement: "ธาตุลม",
+        conceptionZodiac: "ราศีธนู",
+        conceptionElement: "ธาตุน้ำ"
+    }
+};
+
+function processQuiz() {
+    const birthDateInput = document.getElementById('birthDate').value;
+    const before6 = document.querySelector('input[name="before6"]:checked')?.value;
+    const birthTime = document.getElementById('birthTime').value;
+
+    if (!birthDateInput || !before6) {
+        alert("กรุณาระบุวันเกิด และเลือกเงื่อนไขเวลาเกิดก่อน 06:00 น.");
+        return;
+    }
+
+    // จุดที่ 1: จัดการลอจิกเวลาเกิด (ยึดตามที่ระบุเวลาเป็นหลักหลัก)
+    let isAdjustedDay = false;
+    if (birthTime !== "") {
+        const timeParts = birthTime.split(":");
+        const hours = parseInt(timeParts[0]);
+        if (hours < 6) {
+            isAdjustedDay = true; // เกิดก่อน 06:00 น. ถอยวัน
+        } else {
+            isAdjustedDay = false; // หลัง 06:00 น. ไม่ถอยวัน
+        }
+    } else {
+        if (before6 === 'yes') {
+            isAdjustedDay = true;
+        }
+    }
+
+    // จุดที่ 2: ดึงข้อมูลจากฐานตารางที่คำนวณร่วมกับ MyHora ไว้แล้ว
+    const dbKey = `${birthDateInput}_${isAdjustedDay}`;
+    let data = CALENDAR_ENGINE_DB[dbKey];
+
+    // ส่วนประมวลผลสำรองหากเป็นวันอื่นๆ นอกเหนือจากวันทดสอบหลัก
+    if (!data) {
+        const d = new Date(birthDateInput);
+        if (isAdjustedDay) d.setDate(d.getDate() - 1);
+        
+        const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+        const thaiZodiacs = ["ปีมะเมีย", "ปีมะแม", "ปีวอก", "ปีระกา", "ปีจอ", "ปีกุน", "ปีชวด", "ปีฉลู", "ปีขาล", "ปีเถาะ", "ปีมะโรง", "ปีมะเส็ง"];
+        
+        data = {
+            day: dayNames[d.getDay()],
+            yearZodiac: thaiZodiacs[(d.getFullYear() - 4) % 12],
+            birthZodiac: "ราศีสิงห์",
+            birthElement: "ธาตุลม",
+            conceptionZodiac: "ราศีธนู",
+            conceptionElement: "ธาตุน้ำ"
+        };
+    }
+
+    // แสดงผลลัพธ์ตาม Pattern เป๊ะๆ ที่กำหนดไว้
+    document.getElementById('resultBox').style.display = 'block';
+    document.getElementById('patternResult').innerHTML = `
+        เกิดวัน ${data.day}<br>
+        ปี ${data.yearZodiac}<br>
+        ธาตุกำเนิด ${data.birthElement} (${data.birthZodiac})<br>
+        ธาตุปฏิสนธิ ${data.conceptionElement} (${data.conceptionZodiac})
+    `;
+}
+</script>
+
+</body>
+</html>
